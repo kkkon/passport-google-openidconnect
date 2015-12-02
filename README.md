@@ -107,8 +107,31 @@ checkins:
     app.get('/auth/google',
       passport.authenticate('google-openidconnect', { scope: ['email', 'profile'] }));
 
-You doesn't need to contain the scope of `openid`, added by this module automatically
+Your array of scopes doesn't need to contain the scope of `openid`, since it added by this module automatically
 
+## Dynamic Scope Requests
+
+If you need to be able to modify which scopes are requested based on the user/request, then you can pass a `getScope` function when configuring the strategy. The getScope function accepts a request object as its only parameter and syncrhronously returns a space-seperated string of scopes
+
+    var StrategyGoogle = require('passport-google-openidconnect').Strategy;
+    passport.use(new StrategyGoogle({
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: "http://127.0.0.1:3000/auth/google/callback",
+        userInfoURL: "https://www.googleapis.com/plus/v1/people/me"
+        getScope: function (req) {
+          // pass the scope query param used from the login page 
+          // along to Google
+          var requestedScopes = req.query.scopes
+          return requestedScopes
+        }
+      },
+      function(iss, sub, profile, accessToken, refreshToken, done) {
+        User.findOrCreate({ googleId: profile.id }, function (err, user) {
+          return done(err, user);
+        });
+      }
+    ));
 
 ## Usage for non Google+ and only openid
 
